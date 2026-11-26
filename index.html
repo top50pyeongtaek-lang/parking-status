@@ -76,10 +76,10 @@
   <button type="button" onclick="loadAll()">새로고침</button>
 
   <script>
-    const API_URL = "https://parking.puc.or.kr/parking/operating.json";
+    const WORKER_BASE = "https://blue-heart-faaf.top50pyeongtaek.workers.dev";
 
     function extractSpots(data) {
-      const targetKeys = ["remain", "remainCnt", "avail", "availCnt", "empty", "emptyCnt", "parkAvailable", "posblCnt", "cnt"];
+      const targetKeys = ["remain", "remainCnt", "avail", "availCnt", "empty", "emptyCnt", "parkAvailable", "posblCnt", "cnt", "parkCnt", "remCnt"];
       function walk(obj) {
         if (!obj || typeof obj !== "object") return null;
         for (const k of Object.keys(obj)) {
@@ -97,15 +97,7 @@
     }
 
     async function fetchParking(parkingId) {
-      const body = new URLSearchParams({ PARKING_ID: String(parkingId) });
-      const res = await fetch(API_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-          "X-Requested-With": "XMLHttpRequest"
-        },
-        body: body.toString()
-      });
+      const res = await fetch(`${WORKER_BASE}/?id=${encodeURIComponent(parkingId)}`);
       if (!res.ok) throw new Error("HTTP " + res.status);
       return await res.json();
     }
@@ -117,16 +109,15 @@
       try {
         const data = await fetchParking(parkingId);
         const spots = extractSpots(data);
+        detailEl.innerText = JSON.stringify(data);
         if (spots !== null) {
           numEl.innerText = spots + " 면";
-          detailEl.innerText = JSON.stringify(data);
         } else {
-          numEl.innerText = "응답확인";
-          detailEl.innerText = JSON.stringify(data);
+          numEl.innerText = "값 확인";
         }
       } catch (err) {
-        numEl.innerText = "직접호출제한";
-        detailEl.innerText = "브라우저 CORS/세션 제한 (" + err.message + ")";
+        numEl.innerText = "오류";
+        detailEl.innerText = err.message;
       }
     }
 
