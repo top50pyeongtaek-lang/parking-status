@@ -6,52 +6,139 @@
   <title>공영주차장 잔여 면수 안내</title>
   <style>
     body {
-      font-family: sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif;
       background: #0f172a;
       color: #f8fafc;
       text-align: center;
-      padding: 36px 16px;
+      padding: 28px 16px;
       margin: 0;
+    }
+    h2 {
+      margin: 0 0 8px;
+      font-size: 24px;
+    }
+    .time {
+      font-size: 13px;
+      color: #94a3b8;
+      margin-bottom: 20px;
     }
     .card {
       max-width: 480px;
       margin: 0 auto 16px;
       background: #1e293b;
       border-radius: 16px;
-      padding: 24px 18px;
+      padding: 22px 18px;
     }
     .name {
       font-size: 20px;
-      font-weight: bold;
+      font-weight: 700;
     }
     .num {
-      font-size: 44px;
+      font-size: 46px;
       font-weight: 800;
       color: #4ade80;
-      margin-top: 10px;
+      margin: 10px 0 6px;
     }
     .sub {
       font-size: 13px;
       color: #94a3b8;
-      margin-top: 8px;
+      word-break: break-all;
+    }
+    button {
+      background: #38bdf8;
+      color: #0f172a;
+      border: none;
+      border-radius: 12px;
+      padding: 14px 24px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 6px;
     }
   </style>
 </head>
 <body>
   <h2>실시간 공영주차장 잔여 면수</h2>
+  <div class="time" id="updated">불러오는 중...</div>
 
   <div class="card">
-    <div class="name">JC공원지하주차장</div>
+    <div class="name">JC공원지하주차장 (ID: 185)</div>
     <div class="num" id="jc">- 면</div>
-    <div class="sub">경기 평택시 평택동 38</div>
+    <div class="sub" id="jc-detail">경기 평택시 평택동 38</div>
   </div>
 
   <div class="card">
-    <div class="name">자란공영주차장</div>
+    <div class="name">자란공영주차장 (ID: 27)</div>
     <div class="num" id="jaran">- 면</div>
-    <div class="sub">경기 평택시 비전동 632-12 일대</div>
+    <div class="sub" id="jaran-detail">경기 평택시 비전동 632-12 일대</div>
   </div>
 
-  <p class="sub">페이지 연결 확인용 화면입니다.</p>
+  <button type="button" onclick="loadAll()">새로고침</button>
+
+  <script>
+    const API_URL = "https://parking.puc.or.kr/parking/operating.json";
+
+    function extractSpots(data) {
+      const targetKeys = ["remain", "remainCnt", "avail", "availCnt", "empty", "emptyCnt", "parkAvailable", "posblCnt", "cnt"];
+      function walk(obj) {
+        if (!obj || typeof obj !== "object") return null;
+        for (const k of Object.keys(obj)) {
+          if (targetKeys.includes(k) && obj[k] !== null && obj[k] !== "" && !Number.isNaN(Number(obj[k]))) {
+            return Number(obj[k]);
+          }
+        }
+        for (const v of Object.values(obj)) {
+          const found = walk(v);
+          if (found !== null) return found;
+        }
+        return null;
+      }
+      return walk(data);
+    }
+
+    async function fetchParking(parkingId) {
+      const body = new URLSearchParams({ PARKING_ID: String(parkingId) });
+      const res = await fetch(API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+          "X-Requested-With": "XMLHttpRequest"
+        },
+        body: body.toString()
+      });
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      return await res.json();
+    }
+
+    async function updateCard(parkingId, numId, detailId) {
+      const numEl = document.getElementById(numId);
+      const detailEl = document.getElementById(detailId);
+      numEl.innerText = "...";
+      try {
+        const data = await fetchParking(parkingId);
+        const spots = extractSpots(data);
+        if (spots !== null) {
+          numEl.innerText = spots + " 면";
+          detailEl.innerText = JSON.stringify(data);
+        } else {
+          numEl.innerText = "응답확인";
+          detailEl.innerText = JSON.stringify(data);
+        }
+      } catch (err) {
+        numEl.innerText = "직접호출제한";
+        detailEl.innerText = "브라우저 CORS/세션 제한 (" + err.message + ")";
+      }
+    }
+
+    async function loadAll() {
+      await Promise.all([
+        updateCard(185, "jc", "jc-detail"),
+        updateCard(27, "jaran", "jaran-detail")
+      ]);
+      document.getElementById("updated").innerText = "업데이트: " + new Date().toLocaleTimeString("ko-KR");
+    }
+
+    loadAll();
+  </script>
 </body>
 </html>
