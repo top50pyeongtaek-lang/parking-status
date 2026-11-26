@@ -42,7 +42,6 @@
     .sub {
       font-size: 13px;
       color: #94a3b8;
-      word-break: break-all;
     }
     button {
       background: #38bdf8;
@@ -53,7 +52,7 @@
       font-size: 16px;
       font-weight: 700;
       cursor: pointer;
-      margin-top: 6px;
+      margin-top: 8px;
     }
   </style>
 </head>
@@ -62,13 +61,13 @@
   <div class="time" id="updated">불러오는 중...</div>
 
   <div class="card">
-    <div class="name">JC공원지하주차장 (ID: 185)</div>
+    <div class="name">JC공원지하주차장</div>
     <div class="num" id="jc">- 면</div>
-    <div class="sub" id="jc-detail">경기 평택시 평택동 38</div>
+    <div class="sub" id="jc-detail">경기 평택시 평택1로20번길 6 (평택동)</div>
   </div>
 
   <div class="card">
-    <div class="name">자란공영주차장 (ID: 27)</div>
+    <div class="name">자란공영주차장</div>
     <div class="num" id="jaran">- 면</div>
     <div class="sub" id="jaran-detail">경기 평택시 비전동 632-12 일대</div>
   </div>
@@ -78,28 +77,11 @@
   <script>
     const WORKER_BASE = "https://blue-heart-faaf.top50pyeongtaek.workers.dev";
 
-    function extractSpots(data) {
-      const targetKeys = ["remain", "remainCnt", "avail", "availCnt", "empty", "emptyCnt", "parkAvailable", "posblCnt", "cnt", "parkCnt", "remCnt"];
-      function walk(obj) {
-        if (!obj || typeof obj !== "object") return null;
-        for (const k of Object.keys(obj)) {
-          if (targetKeys.includes(k) && obj[k] !== null && obj[k] !== "" && !Number.isNaN(Number(obj[k]))) {
-            return Number(obj[k]);
-          }
-        }
-        for (const v of Object.values(obj)) {
-          const found = walk(v);
-          if (found !== null) return found;
-        }
-        return null;
-      }
-      return walk(data);
-    }
-
     async function fetchParking(parkingId) {
       const res = await fetch(`${WORKER_BASE}/?id=${encodeURIComponent(parkingId)}`);
       if (!res.ok) throw new Error("HTTP " + res.status);
-      return await res.json();
+      const data = await res.json();
+      return data?.operating?.result || null;
     }
 
     async function updateCard(parkingId, numId, detailId) {
@@ -107,13 +89,14 @@
       const detailEl = document.getElementById(detailId);
       numEl.innerText = "...";
       try {
-        const data = await fetchParking(parkingId);
-        const spots = extractSpots(data);
-        detailEl.innerText = JSON.stringify(data);
-        if (spots !== null) {
-          numEl.innerText = spots + " 면";
+        const info = await fetchParking(parkingId);
+        if (info && info.CURRENT_CNT !== undefined) {
+          numEl.innerText = `${info.CURRENT_CNT} 면`;
+          const addr = info.CELL_ADDR_LOAD || info.CELL_ADDR_JIBUN || "";
+          const total = info.SUM_CELL_CNT ?? info.CELL_CNT;
+          detailEl.innerText = total ? `${addr} (총 ${total}면)` : addr;
         } else {
-          numEl.innerText = "값 확인";
+          numEl.innerText = "확인 불가";
         }
       } catch (err) {
         numEl.innerText = "오류";
