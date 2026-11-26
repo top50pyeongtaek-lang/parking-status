@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>공영주차장 잔여 면수 안내</title>
+  <title>공영주차장 여유 주차 대수 안내</title>
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif;
@@ -57,19 +57,19 @@
   </style>
 </head>
 <body>
-  <h2>실시간 공영주차장 잔여 면수</h2>
+  <h2>실시간 공영주차장 여유 주차 대수</h2>
   <div class="time" id="updated">불러오는 중...</div>
 
   <div class="card">
     <div class="name">JC공원지하주차장</div>
-    <div class="num" id="jc">- 면</div>
+    <div class="num" id="jc">- 대</div>
     <div class="sub" id="jc-detail">경기 평택시 평택1로20번길 6 (평택동)</div>
   </div>
 
   <div class="card">
     <div class="name">자란공영주차장</div>
-    <div class="num" id="jaran">- 면</div>
-    <div class="sub" id="jaran-detail">경기 평택시 비전동 632-12 일대</div>
+    <div class="num" id="jaran">- 대</div>
+    <div class="sub" id="jaran-detail">경기 평택시 중앙로 53 (비전동)</div>
   </div>
 
   <button type="button" onclick="loadAll()">새로고침</button>
@@ -90,14 +90,14 @@
       numEl.innerText = "...";
       try {
         const info = await fetchParking(parkingId);
-        if (info && info.CURRENT_CNT !== undefined) {
-          numEl.innerText = `${info.CURRENT_CNT} 면`;
-          const addr = info.CELL_ADDR_LOAD || info.CELL_ADDR_JIBUN || "";
-          const total = info.SUM_CELL_CNT ?? info.CELL_CNT;
-          detailEl.innerText = total ? `${addr} (총 ${total}면)` : addr;
+        if (info && info.CURRENT_CNT !== undefined && info.CURRENT_CNT !== null) {
+          numEl.innerText = `${info.CURRENT_CNT}대`;
         } else {
-          numEl.innerText = "확인 불가";
+          numEl.innerText = "현장확인";
         }
+        const addr = info?.CELL_ADDR_LOAD || info?.CELL_ADDR_JIBUN || "";
+        const total = info?.SUM_CELL_CNT ?? info?.CELL_CNT;
+        detailEl.innerText = total ? `${addr} (총 ${total}대)` : addr;
       } catch (err) {
         numEl.innerText = "오류";
         detailEl.innerText = err.message;
